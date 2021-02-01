@@ -1,0 +1,99 @@
+---
+title: "Challenge 1 - Time series"
+author: "Pierre Chevallier"
+date: "1/24/2021"
+knit: (function(inputFile, encoding) { 
+        out_dir <- 'output';
+        rmarkdown::render(
+          inputFile,
+          encoding=encoding,
+          output_file=file.path(
+            dirname(inputFile),
+            out_dir,
+            'challenge_1_time_series.html'
+          )
+        )
+      })
+output: html_document
+---
+
+# Setup
+
+The setup consists of importing the data, and loading the libraries for the analysis.
+We will work using this RMarkdown document to include the findings of our research.
+This is for 2 reasons:
+
+  - Making the document easily maintainable with one place for the writing and the coding (especially to include it later on the blog)
+  - To share it and export it easily so it can be hosted on GitHub with the code and the findings
+
+I attached in quote excerpts from the challenge requirements to make sure to keep track of the end goal.
+
+Also we will use the packages:
+
+ - `Dplyr` for easier manipulation, this is a must have for R (maybe I'll do a topic on that)
+ - `zoo` for the year  month handling
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(zoo)
+dairy_data <- read.csv("~/Documents/R/Take_home_blog/take-home-challenge/Take_home_1/Challenge 1_cadairydata.csv")
+```
+
+> In this challenge, you will create a forecasting model for dairy production. The forecasting model is based on an existing dataset of dairy production history for California.
+> 
+> - Open Challenge 1_cadairydata.csv file. 
+> 
+> - View the contents of the `cadairydata.csv` file, noting that it contains dairy production data from January 1995 to December 2013
+
+Here we are, the data have been loaded just before, so we can have a quick look at it.
+
+```{r Content view}
+head(dairy_data)
+str(dairy_data)
+```
+
+Right now we can see a few things that are interesting, first of all, the data are already converted into a year-month format (numerical format with the year as the integer and the month as a decimal value). Also there are 4 series of data in our dataset. They are all fine, but not very easy to use when typing code, let's rename them:
+
+ - Cotagecheese.Prod -> CotageCheeseProd
+ - Icecream.Prod -> IceCreamProd
+ - Milk.Prod -> MilkProd
+ - N.CA.Fat.Price -> FatPrice
+
+```{r Renaming}
+dairy_data <- dairy_data %>% 
+  rename(
+    CotageCheeseProd = Cotagecheese.Prod,
+    IceCreamProd = Icecream.Prod,
+    MilkProd = Milk.Prod,
+    FatPrice = N.CA.Fat.Price
+  )
+```
+
+# 1. Patterns in the data
+
+> Identify any patterns in the data if any
+
+# 2. Forecasting the series
+
+> Based on above, create a forecasting model and predict the next 12 months ice cream production and plot the time series using any of the following desired tools (e.g. R, Python, Qlik, PBI, Tableau...) 
+> 
+> | Year | Month | MonthNumber | Ice cream production |
+> | ---- | ----- | ----------- | -------------------- |
+> | 2014 | Jan   | 1           |                      |
+> | 2014 | Feb   | 2           |                      |
+> | 2014 | Mar   | 3           |                      |
+> | 2014 | Apr   | 4           |                      |
+> | 2014 | May   | 5           |                      |
+> | 2014 | Jun   | 6           |                      |
+> | 2014 | Jul   | 7           |                      |
+> | 2014 | Aug   | 8           |                      |
+> | 2014 | Sep   | 9           |                      |
+> | 2014 | Oct   | 10          |                      |
+> | 2014 | Nov   | 11          |                      |
+> | 2014 | Dec   | 12          |                      |
+
+
+# 3. Additional insights, findings and accuracy tracking
+
+> Explain to us any additional insights that you discovered and tell us how would you track accuracy forward looking?
