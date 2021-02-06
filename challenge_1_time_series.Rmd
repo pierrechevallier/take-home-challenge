@@ -32,11 +32,18 @@ Also we will use the packages:
 
  - `Dplyr` for easier manipulation, this is a must have for R (maybe I'll do a topic on that)
  - `zoo` for the year  month handling
+ - `ggplot2` for generating charts
+ - `patchwork` for the layout of the ggplot charts, [reference](https://github.com/thomasp85/patchwork)
 
 ```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(zoo)
+library(ggplot2)
+library(patchwork)
+# Functions ----
+source("~/Documents/R/Take_home_blog/take-home-challenge/scripts/buildPlot.R")
+# Data ----
 dairy_data <- read.csv("~/Documents/R/Take_home_blog/take-home-challenge/Take_home_1/Challenge 1_cadairydata.csv")
 ```
 
@@ -66,13 +73,45 @@ dairy_data <- dairy_data %>%
     CotageCheeseProd = Cotagecheese.Prod,
     IceCreamProd = Icecream.Prod,
     MilkProd = Milk.Prod,
-    FatPrice = N.CA.Fat.Price
+    FatPrice = N.CA.Fat.Price,
+    YearMonth = Year.Month,
+    MonthNumber = Month.Number
+  ) %>% 
+  mutate(
+    YearMonth = as.yearmon(paste(Year, MonthNumber, "1", sep = "-")),
+    Date = as.Date(YearMonth)
   )
 ```
 
 # 1. Patterns in the data
 
 > Identify any patterns in the data if any
+
+We have overall 4 main variables, which we renamed, to be analysed, we first can look at them individually to look in the plot for:
+
+ - Trend
+ - Seasonality
+ 
+And then we can check them between each other:
+
+ - Are they correlated ?
+ - Are they not correlated ?
+ 
+Of course, this will yield further questions which we can solve with statistical tests to check for example for [stationarity](https://en.wikipedia.org/wiki/Stationary_process). But first, let's plot the data and see how they look throughout time.
+
+```{r Plotting and pattern in data}
+# CotageCheeseProd ----
+cot_plot <- buildPlot(dairy_data, x = "Date", y = "CotageCheeseProd")
+# IceCreamProd ----
+ice_plot <- buildPlot(dairy_data, x = "Date", y = "IceCreamProd")
+# IceCreamProd ----
+milk_plot <- buildPlot(dairy_data, x = "Date", y = "MilkProd")
+# IceCreamProd ----
+fat_plot <- buildPlot(dairy_data, x = "Date", y = "FatPrice")
+
+# Displaying the data together
+(cot_plot / ice_plot / milk_plot / fat_plot)
+```
 
 # 2. Forecasting the series
 
