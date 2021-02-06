@@ -15,6 +15,8 @@ knit: (function(inputFile, encoding) {
         )
       })
 output: html_document
+params:
+  path: "~/Documents/R/Take_home_blog/take-home-challenge/"
 ---
 
 # Setup
@@ -42,9 +44,12 @@ library(zoo)
 library(ggplot2)
 library(patchwork)
 # Functions ----
-source("~/Documents/R/Take_home_blog/take-home-challenge/scripts/buildPlot.R")
+source_files <- list.files(path=paste0(params$path,"scripts/"), pattern = ".*R")
+for (file in source_files) {
+  source(paste0(params$path,"/scripts/", file)) 
+}
 # Data ----
-dairy_data <- read.csv("~/Documents/R/Take_home_blog/take-home-challenge/Take_home_1/Challenge 1_cadairydata.csv")
+dairy_data <- read.csv(paste0(params$path,"Take_home_1/Challenge 1_cadairydata.csv"))
 ```
 
 > In this challenge, you will create a forecasting model for dairy production. The forecasting model is based on an existing dataset of dairy production history for California.
@@ -62,7 +67,7 @@ str(dairy_data)
 
 Right now we can see a few things that are interesting, first of all, the data are already converted into a year-month format (numerical format with the year as the integer and the month as a decimal value). Also there are 4 series of data in our dataset. They are all fine, but not very easy to use when typing code, let's rename them:
 
- - Cotagecheese.Prod -> CotageCheeseProd
+ - Cotagecheese.Prod -> CottageCheeseProd (typo for Cottage cheese !)
  - Icecream.Prod -> IceCreamProd
  - Milk.Prod -> MilkProd
  - N.CA.Fat.Price -> FatPrice
@@ -70,7 +75,7 @@ Right now we can see a few things that are interesting, first of all, the data a
 ```{r Renaming}
 dairy_data <- dairy_data %>% 
   rename(
-    CotageCheeseProd = Cotagecheese.Prod,
+    CottageCheeseProd = Cotagecheese.Prod,
     IceCreamProd = Icecream.Prod,
     MilkProd = Milk.Prod,
     FatPrice = N.CA.Fat.Price,
@@ -101,7 +106,7 @@ Of course, this will yield further questions which we can solve with statistical
 
 ```{r Plotting and pattern in data}
 # CotageCheeseProd ----
-cot_plot <- buildPlot(dairy_data, x = "Date", y = "CotageCheeseProd")
+cot_plot <- buildPlot(dairy_data, x = "Date", y = "CottageCheeseProd")
 # IceCreamProd ----
 ice_plot <- buildPlot(dairy_data, x = "Date", y = "IceCreamProd")
 # IceCreamProd ----
@@ -112,6 +117,17 @@ fat_plot <- buildPlot(dairy_data, x = "Date", y = "FatPrice")
 # Displaying the data together
 (cot_plot / ice_plot / milk_plot / fat_plot)
 ```
+
+Ok now that is interesting, let's sum up what we see from here. I will not dwell on the concepts of trends, seasonality, stationarity and [heteroscedasticity](https://en.wikipedia.org/wiki/Heteroscedasticity). These will maybe be covered in another topic, so let's sum up what we see for each variables:
+
+|  Variable|  Property|  Compared to other variables|
+|--:|--:|--:|
+|  Cottage cheese production|  A trend, and a non-stationary process, but with stochastic component|  Could be correlated to milk production|
+|  Ice Cream Production|  A very seasonal product (no wonder, ice cream sales tend to be in summer)|  NA|
+|  Milk Production|  A clear trend and maybe a bit of seasonality|  Could be correlated to Cottage cheese production|
+|  Fat Price|  An heteroscedastic process with a trend|  NA|
+
+Let's check for multicolinearity.
 
 # 2. Forecasting the series
 
