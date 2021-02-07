@@ -19,6 +19,10 @@ params:
   path: "~/Documents/R/Take_home_blog/take-home-challenge/"
 ---
 
+# TL;DR
+
+We have to predict ice cream production from a dataset provided by [CSV](https://github.com/pierrechevallier/take-home-challenge/blob/main/Take_home_1/Challenge%201_cadairydata.csv). The ice cream shows a strong seasonality (obviously people eat ice cream in summer more than winter!) and makes it easier to predict once you have figured out the seasonal component.
+
 # Setup
 
 The setup consists of importing the data, and loading the libraries for the analysis.
@@ -36,6 +40,8 @@ Also we will use the packages:
  - `zoo` for the year  month handling
  - `ggplot2` for generating charts
  - `patchwork` for the layout of the ggplot charts, [reference](https://github.com/thomasp85/patchwork)
+ - `tseries` for tools for time series like KPSS tests
+ - `astsa` for forecasting
 
 ```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
@@ -43,6 +49,8 @@ library(dplyr)
 library(zoo)
 library(ggplot2)
 library(patchwork)
+library(tseries)
+library(astsa)
 # Functions ----
 source_files <- list.files(path=paste0(params$path,"scripts/"), pattern = ".*R")
 for (file in source_files) {
@@ -127,7 +135,39 @@ Ok now that is interesting, let's sum up what we see from here. I will not dwell
 |  Milk Production|  A clear trend and maybe a bit of seasonality|  Could be correlated to Cottage cheese production|
 |  Fat Price|  An heteroscedastic process with a trend|  NA|
 
-Let's check for multicolinearity.
+As a matter of fact there is a significant autocorrelation of the variables (\code{CottageCheeseProd}, \code{IceCreamProd} and \code{MilkProd}).
+
+Since the ice cream production is the one that should be predicted in this analysis, let's focus on that variable. Let's find out if it's a stationary process by using an [Augmented Dickey-Fuller (ADF)](https://en.wikipedia.org/wiki/Augmented_Dickey%E2%80%93Fuller_test) test as well as a [KPSS test](https://en.wikipedia.org/wiki/KPSS_test), for better understanding on how they work, you can have a look at this [link for a practical example](https://www.projectguru.in/what-is-a-stationarity-test-how-to-do-it/). 
+
+```{r Stationarity}
+kpss <- kpss.test(dairy_data$IceCreamProd)
+adf <- adf.test(dairy_data$IceCreamProd)
+```
+
+Let's resume the results:
+
+|  Test|  p-value|  Test statistic|
+|--:|--:|--:|
+|  ADF|  0.01|  -10.376|
+|  KPSS|  0.086|  0.37796|
+
+So let's recap, we reject the null hypothesis for the ADF test (there is no unit root, thus probably stationarity), and accept the null hypothesis for the KPSS test: the series is stationary without unit root.
+
+Since we have a stationary process, we can use the Partial ACF to estimate the seasonal component
+
+```{r Seasonality}
+print(pacf(dairy_data$IceCreamProd))
+```
+
+Oh oh oh, interesting, we have some seasonality (though we new it beforehand of course), it seems to be especially present on the 2nd lag and on the 12th lag: autocorrelation and annual seasonality. Fair enough !
+
+To put it simply, this is a series without really a trend, so we will just have to predict the seasonal component of the series and predict the future values.
+
+Let's convert the couple \code{YearMonth} and \code{IceCreamProd} into a time series object.
+
+```{r Time series conversion and seasonal component estimation}
+ts_ice_cream <- ts(dairy_data$IceCreamProd, start=min(dairy_data$YearMonth), end = max(dairy_data$YearMonth), frequency = 12)
+```
 
 # 2. Forecasting the series
 
@@ -148,6 +188,22 @@ Let's check for multicolinearity.
 > | 2014 | Nov   | 11          |                      |
 > | 2014 | Dec   | 12          |                      |
 
+Here we are in the more interesting part of the problem, the forecasting. Probably here, the best approach will be to use a [seasonal autoregressive integrated moving average](https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average) model (or seasonal ARIMA or SARIMA). We need to estimate several components of the model:
+
+ - p, which is the order or number of time lags
+ - d, the differencing or how lagged are the data
+ - q, the order of the moving average part of the model
+ - P, the order or number of time lags of the seasonal component
+ - D, the differencing or how lagged the seasonal component is
+ - Q, the order of the moving average of the seasonal component
+
+The best approach to estimate these parameters is to use the [Box-Jenkins method](https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method). We of course already checked a few of these details beforehand !
+
+for sarima : https://rdrr.io/cran/astsa/man/sarima.html
+
+```{r test of sarima}
+sarima_fit <- sarima(ts_ice_cream, p = 1, d = 0, q = 0, P = 0, D = 1, Q = 1, S = 12)
+```
 
 # 3. Additional insights, findings and accuracy tracking
 
