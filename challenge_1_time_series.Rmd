@@ -73,7 +73,7 @@ head(dairy_data)
 str(dairy_data)
 ```
 
-Right now we can see a few things that are interesting, first of all, the data are already converted into a year-month format (numerical format with the year as the integer and the month as a decimal value). Also there are 4 series of data in our dataset. They are all fine, but not very easy to use when typing code, let's rename them:
+Right now we can see a few things that are interesting, first of all, the data are already converted into a year-month format (numerical format with the year as the integer and the month as a decimal value). Also there are 4 series of data in our data set. They are all fine, but not very easy to use when typing code, let's rename them:
 
  - Cotagecheese.Prod -> CottageCheeseProd (typo for Cottage cheese !)
  - Icecream.Prod -> IceCreamProd
@@ -137,11 +137,14 @@ Ok now that is interesting, let's sum up what we see from here. I will not dwell
 
 As a matter of fact there is a significant autocorrelation of the variables (\code{CottageCheeseProd}, \code{IceCreamProd} and \code{MilkProd}).
 
+
+Now in term of cross-correlation of the variables, I have found [this link that provides details on how to do and use it in R](https://medium.com/@jan.seifert/the-r-cross-correlation-function-f5f426006425). I can refer also to the well documented [article on cross-correlation on Wikipedia](https://en.wikipedia.org/w/index.php?title=Cross-correlation&oldid=936791961) that can help understand better how it works.
+
 Since the ice cream production is the one that should be predicted in this analysis, let's focus on that variable. Let's find out if it's a stationary process by using an [Augmented Dickey-Fuller (ADF)](https://en.wikipedia.org/wiki/Augmented_Dickey%E2%80%93Fuller_test) test as well as a [KPSS test](https://en.wikipedia.org/wiki/KPSS_test), for better understanding on how they work, you can have a look at this [link for a practical example](https://www.projectguru.in/what-is-a-stationarity-test-how-to-do-it/). 
 
 ```{r Stationarity}
-kpss <- kpss.test(dairy_data$IceCreamProd)
-adf <- adf.test(dairy_data$IceCreamProd)
+kpss.test(dairy_data$IceCreamProd)
+adf.test(dairy_data$IceCreamProd)
 ```
 
 Let's resume the results:
@@ -233,7 +236,7 @@ Given the table of the parameters we could tweak it out a bit and change the \co
 Now that the model is fitted we can start using it to predict the next 12 months of production.
 
 ``` {r Prediction of next 12 months}
-predictions <- sarima.for(ts_ice_cream, n.ahead=12, p= 4, d = 0, q = 1, P= 1, D = 0, Q = 4, S = 12)
+predictions <- sarima.for(ts_ice_cream, n.ahead=12, p= 4, d = 0, q = 1, P= 1, D = 0, Q = 4, S = 12, plot.all = T)
 ```
 
 # 3. Additional insights, findings and accuracy tracking
