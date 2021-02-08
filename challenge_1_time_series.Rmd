@@ -156,6 +156,7 @@ So let's recap, we reject the null hypothesis for the ADF test (there is no unit
 Since we have a stationary process, we can use the Partial ACF to estimate the seasonal component
 
 ```{r Seasonality}
+print(acf(dairy_data$IceCreamProd))
 print(pacf(dairy_data$IceCreamProd))
 ```
 
@@ -197,12 +198,42 @@ Here we are in the more interesting part of the problem, the forecasting. Probab
  - D, the differencing or how lagged the seasonal component is
  - Q, the order of the moving average of the seasonal component
 
-The best approach to estimate these parameters is to use the [Box-Jenkins method](https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method). We of course already checked a few of these details beforehand !
+The best approach to estimate these parameters is to use the [Box-Jenkins method](https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method). We of course already checked a few of these details beforehand ! [Another interesting post](https://medium.com/towards-artificial-intelligence/statistical-modeling-of-time-series-data-part-3-forecasting-stationary-time-series-using-sarima-f0ff1284bebb) to have an idea about how to estimate each parameter.
 
-for sarima : https://rdrr.io/cran/astsa/man/sarima.html
+ - So, given the PACF we can conclude that \code{p=4}. This is the order when the lags are within the significant order, which is the case at the point 4.
 
-```{r test of sarima}
-sarima_fit <- sarima(ts_ice_cream, p = 1, d = 0, q = 0, P = 0, D = 1, Q = 1, S = 12)
+ - We have determined that the series is already stationary, thus \code{d=0}, we won't need to remove the trend associated with it.
+
+ - And given the ACF we can conclude that \code{q=3}. The approach is similar to the one for the PACF, except with the ACF. Given several iteration of the model we finally settle on 1, which has the smallest AIC and BIC criteria.
+ 
+ - We settle, based upon the PACF and ACF on the following values for \code{P=1} and \code{Q=4}, the seasonal component being \code{S=12} since we have a 12 month seasonality.
+
+```{r Fitting of SARIMA model}
+sarima_fit <- sarima(ts_ice_cream, p= 4, d = 0, q = 1, P= 1, D = 0, Q = 4, S = 12)
+```
+
+The output looks rather ok and we have a BIC and AIC that are quite manageable.
+
+Given the table of the parameters we could tweak it out a bit and change the \code{p}parameter to 3, but it doesn't gain much more accuracy, the computation time is longer and the model fitting doesn't converge fast enough.
+
+
+>       Estimate     SE  t.value p.value
+> ar1    -0.5882 0.0799  -7.3599  0.0000
+> ar2     0.4113 0.0779   5.2793  0.0000
+> ar3     0.3600 0.0772   4.6612  0.0000
+> ar4     0.1117 0.0769   1.4529  0.1477
+> ma1     0.9587 0.0283  33.8715  0.0000
+> sar1    0.9904 0.0059 168.8495  0.0000
+> sma1   -0.4795 0.0752  -6.3756  0.0000
+> sma2   -0.2259 0.0773  -2.9239  0.0038
+> sma3   -0.0815 0.0867  -0.9404  0.3481
+> sma4    0.2305 0.0868   2.6564  0.0085
+> xmean  70.2552 6.7042  10.4793  0.0000
+
+Now that the model is fitted we can start using it to predict the next 12 months of production.
+
+``` {r Prediction of next 12 months}
+predictions <- sarima.for(ts_ice_cream, n.ahead=12, p= 4, d = 0, q = 1, P= 1, D = 0, Q = 4, S = 12)
 ```
 
 # 3. Additional insights, findings and accuracy tracking
